@@ -1,0 +1,7 @@
+FROM php:apache
+ENV DPKG_FRONTEND=noninteractive
+RUN apt -q -y update && apt -q -y upgrade
+RUN apt -q -y install git
+RUN cd /tmp && curl -sS https://getcomposer.org/installer | php && mv composer.phar /usr/local/bin/composer
+RUN chmod 755 /usr/local/bin/composer
+WORKDIR /var/www/html

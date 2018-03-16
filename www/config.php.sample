@@ -1,0 +1,7 @@
+<?php
+define('OAUTH2_CLIENT_ID', '11111111111111111111');
+define('OAUTH2_CLIENT_SECRET', '2222222222222222222222222222222222222');
+
+define('GH_URL_AUTHORIZE','https://github.com/login/oauth/authorize');
+define('GH_URL_ACCESS_TOKEN','https://github.com/login/oauth/access_toke');
+define('GH_URL_API','https://api.github.com/');

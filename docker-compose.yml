@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  php:
+    container_name: ghoauthphp
+    image: epfl-dojo/ghoauthphp
+    build:
+      context: .
+      dockerfile: Dockerfile-ghoauthphp
+    ports:
+     - "5000:80"
+    volumes:
+     - ./www:/var/www/html
