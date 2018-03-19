@@ -1,1 +1,9 @@
-{}
+{
+    "name": "epfldojo/ghoauth",
+    "require": {
+        "nette/database": "^2.4",
+        "monolog/monolog": "^1.23",
+        "phroute/phroute": "^2.1",
+        "tracy/tracy": "^2.4"
+    }
+}

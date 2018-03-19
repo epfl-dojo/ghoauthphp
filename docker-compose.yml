@@ -10,4 +10,4 @@ services:
     ports:
      - "5000:80"
     volumes:
-     - ./www:/var/www/html
+     - .:/var/www/html
