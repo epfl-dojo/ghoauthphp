@@ -1,18 +1,32 @@
 <?php
-
-require_once(__DIR__ . '/config.php');
-
 session_start();
 
-// Start the login process by sending the user to Github's authorization page
-if(get('action') == 'login') {
+require_once(__DIR__ . '/vendor/autoload.php');
+require_once(__DIR__ . '/config.php');
+require_once(__DIR__ . '/db.php');
+
+
+use Phroute\Phroute\RouteCollector;
+use Phroute\Phroute\Dispatcher;
+$router = new RouteCollector();
+
+$router->any('/', function(){
+  return 'Home Page';
+});
+
+$router->get('/example', function(){
+  return 'This route responds to requests with the GET method at the path /example';
+});
+
+$router->get('/login', function(){
+
   // Generate a random hash and store in the session for security
   $_SESSION['state'] = hash('sha256', microtime(TRUE).rand().$_SERVER['REMOTE_ADDR']);
   unset($_SESSION['access_token']);
 
   $params = array(
     'client_id' => OAUTH2_CLIENT_ID,
-    'redirect_uri' => 'http://localhost:5000/callback.php',
+    'redirect_uri' => 'http://localhost:5000/auth',
     'scope' => 'user',
     'state' => $_SESSION['state']
   );
@@ -20,42 +34,60 @@ if(get('action') == 'login') {
   // Redirect the user to Github's authorization page
   header('Location: ' . GH_URL_AUTHORIZE . '?' . http_build_query($params));
   die();
-}
+});
 
-// When Github redirects the user back here, there will be a "code" and "state" parameter in the query string
-if(get('code')) {
-  // Verify the state matches our stored state
-  if(!get('state') || $_SESSION['state'] != get('state')) {
-    header('Location: ' . $_SERVER['PHP_SELF']);
-    die();
+$router->get('/logout', function(){
+  unset($_SESSION['access_token']);
+  unset($_SESSION['state']);
+});
+
+$router->get('/auth', function(){
+  // When Github redirects the user back here, there will be a "code" and "state" parameter in the query string
+  if(get('code')) {
+    // Verify the state matches our stored state
+    if(!get('state') || $_SESSION['state'] != get('state')) {
+      header('Location: /auth');
+      die();
+    }
+
+    // Exchange the auth code for a token
+    $token = apiRequest(GH_URL_ACCESS_TOKEN, array(
+      'client_id' => OAUTH2_CLIENT_ID,
+      'client_secret' => OAUTH2_CLIENT_SECRET,
+      'redirect_uri' => 'http://localhost:5000/auth',
+      'state' => $_SESSION['state'],
+      'code' => get('code')
+    ));
+    $_SESSION['access_token'] = $token->access_token;
+
+    header('Location: /auth');
   }
 
-  // Exchange the auth code for a token
-  $token = apiRequest(GH_URL_ACCESS_TOKEN, array(
-    'client_id' => OAUTH2_CLIENT_ID,
-    'client_secret' => OAUTH2_CLIENT_SECRET,
-    'redirect_uri' => 'http://localhost:5000/callback.php',
-    'state' => $_SESSION['state'],
-    'code' => get('code')
-  ));
-  $_SESSION['access_token'] = $token->access_token;
+  if(session('access_token')) {
+    $user = apiRequest(GH_URL_API . 'user');
 
-  header('Location: ' . $_SERVER['PHP_SELF']);
-}
+    echo '<h3>Logged In</h3>';
+    echo '<h4>' . $user->name . '</h4>';
+    echo '<pre>';
+    print_r($user);
+    echo '</pre>';
+    $db->query('REPLACE INTO user ', [
+        'id' => $user->id,
+        'login' => $user->login,
+        'fullname' => $user->name,
+        'lastlogin' => date('Y-m-d H:i:s'),
+    ]);
+  } else {
+    echo '<h3>Not logged in</h3>';
+    echo '<p><a href="?action=login">Log In</a></p>';
+  }
+});
+$dispatcher =  new Dispatcher($router->getData());
+$response = $dispatcher->dispatch($_SERVER['REQUEST_METHOD'], parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH));
+echo $response;
 
-if(session('access_token')) {
-  $user = apiRequest(GH_URL_API . 'user');
 
-  echo '<h3>Logged In</h3>';
-  echo '<h4>' . $user->name . '</h4>';
-  echo '<pre>';
-  print_r($user);
-  echo '</pre>';
 
-} else {
-  echo '<h3>Not logged in</h3>';
-  echo '<p><a href="?action=login">Log In</a></p>';
-}
 
 
 function apiRequest($url, $post=FALSE, $headers=array()) {

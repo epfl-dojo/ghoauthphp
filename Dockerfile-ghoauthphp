@@ -1,7 +1,8 @@
 FROM php:apache
 ENV DPKG_FRONTEND=noninteractive
 RUN apt -q -y update && apt -q -y upgrade
-RUN apt -q -y install git
+RUN apt -q -y install git firebird3.0-common
 RUN cd /tmp && curl -sS https://getcomposer.org/installer | php && mv composer.phar /usr/local/bin/composer
 RUN chmod 755 /usr/local/bin/composer
+RUN a2enmod rewrite
 WORKDIR /var/www/html
