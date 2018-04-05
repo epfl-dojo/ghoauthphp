@@ -11,33 +11,40 @@ if(get('action') == 'login') {
   unset($_SESSION['access_token']);
 
   $params = array(
-    'client_id' => OAUTH2_CLIENT_ID,
+    'client_id' => GOOGLE_CLIENT_ID,
     'redirect_uri' => 'http://localhost:5000',
     'scope' => 'user',
     'state' => $_SESSION['state']
   );
 
   // Redirect the user to Github's authorization page
-  header('Location: ' . GH_URL_AUTHORIZE . '?' . http_build_query($params));
+  #header('Location: ' . GH_URL_AUTHORIZE . '?' . http_build_query($params));
+  header('Location: https://accounts.google.com/o/oauth2/v2/auth?scope=https://www.googleapis.com/auth/plus.login&access_type=offline&include_granted_scopes=true&state=state_parameter_passthrough_value&redirect_uri=http://localhost:5000/oauth_google.php&response_type=code&client_id=' . $params["client_id"]);
   die();
 }
 
 // When Github redirects the user back here, there will be a "code" and "state" parameter in the query string
 if(get('code')) {
   // Verify the state matches our stored state
-  if(!get('state') || $_SESSION['state'] != get('state')) {
-    header('Location: ' . $_SERVER['PHP_SELF']);
-    die();
-  }
+// var_dump($_REQUEST);
+  // die();
+
+
+  //if(!get('state') || $_SESSION['state'] != get('state')) {
+  //  header('Location: ' . $_SERVER['PHP_SELF']);
+  //  die();
+  //}
 
   // Exchange the auth code for a token
-  $token = apiRequest(GH_URL_ACCESS_TOKEN, array(
-    'client_id'     => OAUTH2_CLIENT_ID,
-    'client_secret' => OAUTH2_CLIENT_SECRET,
-    'redirect_uri'  => 'http://localhost:5000/callback.php',
+  $token = apiRequest(GOOGLE_URL_ACCESS_TOKEN, array(
+    'client_id'     => GOOGLE_CLIENT_ID,
+    'client_secret' => GOOGLE_CLIENT_SECRET,
+    'redirect_uri'  => 'http://localhost:5000/oauth_google.php',
     'state'         => $_SESSION['state'],
     'code'          => get('code')
   ));
+  var_dump($token);
+  die();
   $_SESSION['access_token'] = $token->access_token;
 
   header('Location: ' . $_SERVER['PHP_SELF']);

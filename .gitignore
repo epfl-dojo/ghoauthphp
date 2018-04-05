@@ -1,3 +1,4 @@
 www/vendor
 www/config.php
+vendor
 *.swp
